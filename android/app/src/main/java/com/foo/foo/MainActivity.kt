@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
 fun HelloWorld(modifier: Modifier = Modifier) {
     var isLoggedIn by remember { mutableStateOf(false) }
     val apiClient = FooAPIClient.create()
-
+    apiClient.apiKey = "o6o2UmYyQqztIfPV"
     Column(modifier = modifier) {
         AsyncButton(
             enabled = !isLoggedIn,
@@ -52,12 +52,13 @@ fun HelloWorld(modifier: Modifier = Modifier) {
                     prefix = "+34",
                     countryCode = "ES",
                 )
-                apiClient.checkConfirmationSMSCode(
+                val response = apiClient.checkConfirmationSMSCode(
                     with = "223345999",
                     prefix = "+34",
                     countryCode = "ES",
                     confirmationCode = "123456"
                 )
+                apiClient.authToken = response.customer.customerToken
                 isLoggedIn = true
             }
         ) {

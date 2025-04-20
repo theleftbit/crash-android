@@ -4,10 +4,9 @@ public class FooAPIClient: @unchecked Sendable {
     
     let environment: Environment
     let apiClient: APIClient
-    var authToken: String?
-    var userID: String?
-    var apiKey: String?
-    
+    public var authToken: String?
+    public var apiKey: String?
+
     var installationGuid: String!
     
     public static func create() -> FooAPIClient {
@@ -17,6 +16,7 @@ public class FooAPIClient: @unchecked Sendable {
     private init(environment: Environment, networkFetcher: APIClientNetworkFetcher? = nil) {
         self.environment = environment
         apiClient = .init(environment: environment, networkFetcher: networkFetcher)
+        apiClient.loggingConfiguration = .init(requestBehaviour: .all, responseBehaviour: .all)
         if installationGuid == nil {
             installationGuid = UUID().uuidString
         }
@@ -192,7 +192,7 @@ enum LoginAPI {
 
 public struct LoginResponse: Decodable, Sendable {
     let accessToken: String
-    let customer: Customer
+    public let customer: Customer
 
     enum CodingKeys: String, CodingKey {
         case accessToken = "access_token"
@@ -201,8 +201,8 @@ public struct LoginResponse: Decodable, Sendable {
     
     public struct Customer: Decodable, Sendable {
         let id: Int
-        let customerToken: String
-        let countryCode: String?
+        public let customerToken: String
+        public let countryCode: String?
         
         
         enum CodingKeys: String, CodingKey {

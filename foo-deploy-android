@@ -35,5 +35,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Export completed successfully, undoing changes to Package.swift."
-git checkout .
+echo "Export completed successfully"

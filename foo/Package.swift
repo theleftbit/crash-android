@@ -13,7 +13,7 @@ let package = Package(
         .library(
             name: "foo",
             /// MUST be static for iOS and dynamic for Android. The script takes care of that.
-            type: .static,
+            type: .dynamic,
             targets: ["foo"]
         ),
     ],
@@ -36,5 +36,5 @@ let package = Package(
             dependencies: ["foo"]
         ),
     ],
-    swiftLanguageModes: [.v6]
+    swiftLanguageModes: [.v5]
 )

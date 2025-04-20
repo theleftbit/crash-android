@@ -2,3 +2,6 @@ android/.idea
 android/lib/debug
 android/lib/release
 
+.DS_Store
+android/build/reports
+android/.gradle

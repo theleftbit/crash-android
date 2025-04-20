@@ -42,7 +42,7 @@ class MainActivity : ComponentActivity() {
 fun HelloWorld(modifier: Modifier = Modifier) {
     var isLoggedIn by remember { mutableStateOf(false) }
     val apiClient = FooAPIClient.create()
-    apiClient.apiKey = "o6o2UmYyQqztIfPV"
+    apiClient.apiKey = "0602UmYyQqztIfPV"
     Column(modifier = modifier) {
         AsyncButton(
             enabled = !isLoggedIn,

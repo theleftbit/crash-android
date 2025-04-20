@@ -33,118 +33,39 @@ public class FooAPIClient: @unchecked Sendable {
     }
         
     public func loginWithSMS(with phone: String, prefix: String, countryCode: String) async throws {
-        let request = APIClient.Request<VoidResponse>(endpoint: LoginAPI.Patient.loginWithSMS(phone: phone, prefix: prefix, installationGuid: installationGuid, countryCode: countryCode))
+        let request = APIClient.Request<VoidResponse>(endpoint: LoginAPI.LoginEndpoint.loginWithSMS(phone: phone, prefix: prefix, installationGuid: installationGuid))
         let _ = try await apiClient.perform(request)
     }
         
     public func logOut() async throws {
-        let request = APIClient.Request<VoidResponse>(endpoint: LoginAPI.Patient.logout)
+        let request = APIClient.Request<VoidResponse>(endpoint: LoginAPI.LoginEndpoint.logout)
         let _ = try await apiClient.perform(request)
     }
         
     public func checkConfirmationSMSCode(with phone: String, prefix: String, confirmationCode: String, countryCode: String) async throws -> LoginResponse {
-        let request = APIClient.Request<LoginResponse>(endpoint: LoginAPI.Patient.checkSMSCode(phone: phone, prefix: prefix, verificationCode: confirmationCode, installationGuid: installationGuid, countryCode: countryCode))
-        return try await apiClient.perform(request)
+        struct Wrapper: Codable {
+            let json: LoginResponse
+        }
+        let request = APIClient.Request<Wrapper>(endpoint: LoginAPI.LoginEndpoint.checkCode(phone: phone, prefix: prefix, installationGuid: installationGuid, verificationCode: confirmationCode))
+        return try await apiClient.perform(request).json
     }
 }
 
-
 enum LoginAPI {
-    enum Patient: Endpoint {
-        case loginWithSMS(phone: String, prefix: String, installationGuid: String, countryCode: String)
-        case loginWithSocial(provider: String, token: String, installationGuid: String, countryCode: String, parameters: [String: any Sendable])
-        case checkSMSCode(phone: String, prefix: String, verificationCode: String, installationGuid: String, countryCode: String)
-        case logout
-        case deleteAccount
-        case availableCountries
-        
-        var path: String {
-            switch self {
-            case .loginWithSMS:
-                return "api/v1/login-sms"
-            case .loginWithSocial:
-                return "api/auth/login/social"
-            case .checkSMSCode:
-                return "api/v1/check"
-            case .logout:
-                return "api/v1/logout"
-            case .deleteAccount:
-                return "api/v2/profile"
-            case .availableCountries:
-                return "api/v2/available-countries"
-            }
-        }
-        
-        var method: HTTPMethod {
-            switch self {
-            case .loginWithSMS, .checkSMSCode, .logout, .loginWithSocial:
-                return .POST
-            case .deleteAccount:
-                return .DELETE
-            case .availableCountries:
-                return .GET
-            }
-        }
-        
-        var parameters: [String : Any]? {
-            switch self {
-            case .loginWithSMS(let phone, let prefix, let installationGuid, let countryCode):
-                return [
-                    "phone": phone,
-                    "phone_prefix": prefix,
-                    "installation_guid": installationGuid,
-                    "country_code": countryCode
-                ]
-            case .loginWithSocial(let provider, let token, let installationGuid, let countryCode ,var parameters):
-                parameters["access_token"] = token
-                parameters["provider"] = provider
-                parameters["installation_guid"] = installationGuid
-                parameters["country_code"] = countryCode
-                return parameters
-            case .checkSMSCode(let phone, let prefix, let verificationCode, let installationGuid, let countryCode):
-                return [
-                    "phone": phone,
-                    "phone_prefix": prefix,
-                    "verification_code": verificationCode,
-                    "installation_guid": installationGuid,
-                    "country_code": countryCode
-                ]
-            case .logout, .deleteAccount, .availableCountries:
-                return nil
-            }
-        }
-        
-        var parameterEncoding: HTTPParameterEncoding {
-            switch self {
-            case .loginWithSMS, .checkSMSCode, .loginWithSocial, .availableCountries:
-                return .json
-            case .logout, .deleteAccount:
-                return .url
-            }
-        }
-        
-        var timeoutInterval: TimeInterval? {
-            15
-        }
-    }
-    
-    enum Professional: Endpoint {
+    enum LoginEndpoint: Endpoint {
         
         case loginWithSMS(phone: String, prefix: String, installationGuid: String)
         case checkCode(phone: String, prefix: String, installationGuid: String, verificationCode: String)
         case logout
-        case deleteAccount
         
         var path: String {
             switch self {
             case .loginWithSMS:
-                return "pro/v1/login-sms"
+                return "post"
             case .checkCode:
-                return "pro/v1/check"
+                return "post"
             case .logout:
-                return "pro/v1/logout"
-            case .deleteAccount:
-                return "pro/v1/profile"
+                return "post"
             }
         }
         
@@ -152,8 +73,6 @@ enum LoginAPI {
             switch self {
             case .loginWithSMS, .checkCode, .logout:
                 return .POST
-            case .deleteAccount:
-                return .DELETE
             }
         }
         
@@ -165,21 +84,21 @@ enum LoginAPI {
                     "phone_prefix": prefix,
                     "installation_guid": installationGuid
                 ]
-            case .checkCode(let phone, let prefix, let installationGuid, let verificationCode):
-                return [
-                    "verification_code": verificationCode,
-                    "phone": phone,
-                    "phone_prefix": prefix,
-                    "installation_guid": installationGuid
-                ]
-            case .logout, .deleteAccount:
+            case .checkCode:
+                let response = LoginResponse(
+                    accessToken: "123456789",
+                    customer: LoginResponse.Customer(id: 123, customerToken: "scfdvghbas", countryCode: "us")
+                )
+                let data = try! JSONEncoder().encode(response)
+                return try! JSONSerialization.jsonObject(with: data) as! [String: Any]
+            case .logout:
                 return [:]
             }
         }
         
         var parameterEncoding: HTTPParameterEncoding {
             switch self {
-            case .loginWithSMS, .checkCode, .logout, .deleteAccount:
+            case .loginWithSMS, .checkCode, .logout:
                 return .json
             }
         }
@@ -190,7 +109,7 @@ enum LoginAPI {
     }
 }
 
-public struct LoginResponse: Decodable, Sendable {
+public struct LoginResponse: Codable, Sendable {
     let accessToken: String
     public let customer: Customer
 
@@ -199,7 +118,7 @@ public struct LoginResponse: Decodable, Sendable {
         case customer
     }
     
-    public struct Customer: Decodable, Sendable {
+    public struct Customer: Codable, Sendable {
         let id: Int
         public let customerToken: String
         public let countryCode: String?
@@ -219,12 +138,12 @@ private enum FooAPI {
         case production
         case development
         
-        public var baseURL: URL {
+        var baseURL: URL {
             switch self {
             case .production:
-                return URL(string: "https://api.mediquo.com/")!
+                return URL(string: "https://httpbin.org/")!
             case .development:
-                return URL(string: "https://develop.mediquo.com/")!
+                return URL(string: "https://dev.httpbin.org/")!
             }
         }
     }

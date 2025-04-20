@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Modify Package.swift
+echo "Cleaning build artifacts"
+rm -rf foo/.build/
+
+echo "Modifying Package.swift..."
+
+PACKAGE_FILE="foo/Package.swift"
+
+if [ -f "$PACKAGE_FILE" ]; then
+    sed -i '' 's/type: .static/type: .dynamic/' "$PACKAGE_FILE"
+    sed -i '' 's/swiftLanguageModes: \[.v6\]/swiftLanguageModes: \[.v5\]/' "$PACKAGE_FILE"
+else
+    echo "Package.swift not found. Exiting."
+    exit 1
+fi
+
+echo "Updating Skip..."
+skip upgrade
+
+# Run the export command for debug
+echo "Running export for debug..."
+skip export --module foo --project foo --no-export-project -d android/lib/debug/ --debug
+if [ $? -ne 0 ]; then
+    echo "Debug export failed. Exiting."
+    exit 1
+fi
+
+# Run the export command for release
+echo "Running export for release..."
+skip export --module foo --project foo --no-export-project -d android/lib/release/ --release
+if [ $? -ne 0 ]; then
+    echo "Release export failed. Exiting."
+    exit 1
+fi
+
+echo "Export completed successfully, undoing changes to Package.swift."
+git checkout .
